@@ -1,10 +1,61 @@
 ---
-const title = "Moto Webs";
+import { createClient } from '../lib/prismic';
+import { asText, asHTML } from '@prismicio/helpers';
+
+const client = createClient();
+let page = null;
+try {
+  page = await client.getByUID('page', 'home');
+} catch (e) {
+  console.error('Prismic fetch failed:', e);
+}
+
+const sliceZone =
+  page?.data?.slices ??
+  page?.data?.body ??
+  page?.data?.slice_zone ??
+  [];
+
+const hero = sliceZone.find((s) => s.slice_type === 'hero');
 ---
+
 <html lang="en">
-  <head><meta charset="utf-8" /><title>{title}</title></head>
-  <body>
-    <h1>🚀 Astro is going live!</h1>
-    <p>Deployed by Brandviser. Edit this file to see live reload.</p>
+  <head>
+    <meta charset="utf-8" />
+    <title>{page ? page.data?.title || 'Moto Webs' : 'Moto Webs'}</title>
+  </head>
+  <body style="font-family: system-ui; max-width: 900px; margin: 40px auto;">
+    <p>UID: {page?.uid}</p>
+
+    {hero ? (
+      <section style="padding:24px 0;">
+        {hero.primary?.image?.url && (
+          <img
+            src={hero.primary.image.url}
+            alt={hero.primary.image.alt || 'Hero'}
+            style="max-width:100%;height:auto;margin-bottom:16px;"
+          />
+        )}
+
+        {/* If heading is Rich Text, asText() turns it into a plain string */}
+        {hero.primary?.heading && <h2>{asText(hero.primary.heading)}</h2>}
+
+        {/* If subheading is Rich Text, asHTML() returns HTML -> render with set:html */}
+        {hero.primary?.subheading && (
+          <div set:html={asHTML(hero.primary.subheading)} />
+        )}
+
+        {hero.primary?.cta_label && (
+          <a
+            href={hero.primary?.cta_link?.url || '#'}
+            style="display:inline-block;margin-top:8px;padding:8px 12px;background:#333;color:#fff;text-decoration:none;border-radius:6px;"
+          >
+            {hero.primary.cta_label}
+          </a>
+        )}
+      </section>
+    ) : (
+      <p>No hero slice found on this page.</p>
+    )}
   </body>
 </html>
